@@ -89,3 +89,66 @@ account and any posts you wrote untouched.
 
 Authenticated requests send `Authorization: Bearer <token>`. Tokens expire after
 an hour; the client signs the user out as soon as one lapses.
+
+## Deploying to Vercel
+
+The client and the API deploy as **two separate Vercel projects from this one
+repo**, each with a different Root Directory.
+
+### 1. API project
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `server` |
+| Framework Preset | Other |
+
+Environment variables (Settings → Environment Variables):
+
+| Variable | Value |
+| --- | --- |
+| `MONGO_URI` | your Atlas connection string |
+| `JWT_SECRET` | a fresh random string — not the one used locally |
+| `GOOGLE_CLIENT_ID` | your Google OAuth client ID |
+| `CLIENT_ORIGIN` | the client's URL, e.g. `https://memories-client.vercel.app` |
+
+`server/vercel.json` routes every path to `api/index.js`, which exports the
+Express app. `server/index.js` is only used locally.
+
+Deploy this first — you need its URL for the client.
+
+### 2. Client project
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `client` |
+| Framework Preset | Vite (auto-detected) |
+
+| Variable | Value |
+| --- | --- |
+| `VITE_API_URL` | the API project's URL, no trailing slash |
+| `VITE_GOOGLE_CLIENT_ID` | the same Google client ID |
+
+`client/vercel.json` rewrites all paths to `index.html`, without which
+reloading a deep link such as `/posts?page=2` returns a 404.
+
+Vite inlines `VITE_*` variables at build time, so after changing either one you
+must redeploy — restarting is not enough.
+
+### 3. Two things outside Vercel
+
+**MongoDB Atlas** — serverless functions have no fixed IP. Under Network
+Access, allow `0.0.0.0/0`, or the API will hang and then return 503.
+
+**Google Cloud Console** — add the client's deployed URL to your OAuth client's
+*Authorised JavaScript origins*, or Google sign-in fails with `origin_mismatch`.
+
+### Before going live
+
+Remove the demo accounts, which share a published password:
+
+```bash
+node server/seed.js --undo
+```
+
+Run it against the production database (with `MONGO_URI` pointed at it), not
+just locally.
