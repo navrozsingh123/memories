@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment files — never commit real credentials.
+# Copy the .env.example files and fill them in locally instead.
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
