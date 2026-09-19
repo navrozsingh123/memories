@@ -77,8 +77,16 @@ so the feed reads like a real multi-user one. Every sample post is tagged
 The script is re-runnable — existing sample posts are refreshed rather than
 duplicated.
 
-> The demo accounts share the password `demo1234`. They are ordinary,
-> sign-in-able accounts, so remove them before pointing this at anything real:
+The demo accounts are given a random, unusable password that is never printed
+or committed — they exist only to author posts. To sign in as one locally, set
+your own and re-run:
+
+```bash
+DEMO_PASSWORD=whatever node server/seed.js
+```
+
+Re-running always resets the demo passwords, so it doubles as a rotation. To
+remove the demo data entirely:
 
 ```bash
 node server/seed.js --undo

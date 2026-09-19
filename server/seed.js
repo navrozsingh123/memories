@@ -6,6 +6,7 @@
 // They are ordinary accounts with a known shared password — fine for local
 // development, but delete them (--undo) before pointing this at anything real.
 import 'dotenv/config';
+import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import connectDB from './db.js';
@@ -13,8 +14,14 @@ import PostMessage from './models/postMessage.js';
 import User from './models/user.js';
 
 const SEED_TAG = 'sample';
-const DEMO_PASSWORD = 'demo1234';
 const DEMO_DOMAIN = '@memories.demo';
+
+// Demo authors exist to give the feed several voices — nobody needs to sign in
+// as them. With no DEMO_PASSWORD set they get an unguessable password that is
+// never printed or stored, so the accounts cannot be used. Set DEMO_PASSWORD
+// yourself only if you actually want to log in as one locally.
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || crypto.randomBytes(32).toString('base64url');
+const DEMO_PASSWORD_IS_KNOWN = Boolean(process.env.DEMO_PASSWORD);
 
 const photo = (id) =>
   `https://images.unsplash.com/${id}?w=600&h=338&fit=crop&q=70&auto=format`;
@@ -130,6 +137,10 @@ const seed = async () => {
     if (!user) {
       user = await User.create({ name: author.name, email, password: hashed });
       console.log(`  created demo author: ${author.name} <${email}>`);
+    } else {
+      // Always reset it, so re-running the script rotates the credential.
+      await User.updateOne({ _id: user._id }, { $set: { password: hashed } });
+      console.log(`  reset password for: ${author.name} <${email}>`);
     }
     authors.push({ user, posts: author.posts });
   }
@@ -154,7 +165,11 @@ const seed = async () => {
 
   console.log(`\n${counts.created} post(s) created, ${counts.updated} updated.`);
   console.log(`Your posts are attributed to: ${owner.name}`);
-  console.log(`Demo authors sign in with password: ${DEMO_PASSWORD}`);
+  console.log(
+    DEMO_PASSWORD_IS_KNOWN
+      ? 'Demo authors use the DEMO_PASSWORD you provided.'
+      : 'Demo author accounts have random, unusable passwords (nothing to leak).',
+  );
   console.log(`Total posts now: ${await PostMessage.countDocuments()}`);
 };
 
